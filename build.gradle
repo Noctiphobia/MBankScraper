@@ -1,0 +1,35 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+version = 1.0
+
+jar {
+    from {
+        configurations.compile.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+        configurations.runtime.collect {
+            it.isDirectory() ? it : zipTree(it)
+        }
+    }
+    manifest {
+        attributes 'Implementation-Title': 'mBank Scraper', 'Implementation-Version': version
+        attributes 'Main-Class': 'com.mbankscraper.Main'
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir 'src'
+        }
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'net.sourceforge.htmlunit:htmlunit:2.27'
+}
