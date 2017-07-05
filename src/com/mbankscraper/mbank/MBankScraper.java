@@ -13,12 +13,16 @@ import java.util.List;
 public class MBankScraper implements BankScraper {
     private final WebClient webClient;
 
+    private final boolean debug = false;
+
     public MBankScraper(){
         webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getOptions().setJavaScriptEnabled(false);
-        webClient.getOptions().setUseInsecureSSL(true);
-        ProxyConfig proxyConfig = new ProxyConfig("127.0.0.1", 8080);
-        webClient.getOptions().setProxyConfig(proxyConfig);
+        if (debug){
+            webClient.getOptions().setUseInsecureSSL(true);
+            ProxyConfig proxyConfig = new ProxyConfig("127.0.0.1", 8080);
+            webClient.getOptions().setProxyConfig(proxyConfig);
+        }
     }
 
 
