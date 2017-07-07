@@ -1,0 +1,18 @@
+{
+  "loginCredentials": {
+    "userName": "ExampleUser",
+    "password": "ExamplePassword"
+  },
+  "expectedAccounts": [
+    {
+      "name": "Account 1",
+      "number": "00 1111 2222 3333 4444 5555",
+      "currency": "GBP"
+    },
+    {
+      "name": "Account 2",
+      "number": "00 9999 8888 7777 6666 5555",
+      "currency": "USD"
+    }
+  ]
+}

@@ -11,8 +11,8 @@ public class Main {
         java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(Level.OFF);
         System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.NoOpLog");
 
-        try (ChallengeRunner runner = new ChallengeRunner(new MBankScraper())) {
-            runner.runWithPrompt();
+        try (ScraperUI ui = new ScraperUI(new MBankScraper())) {
+            ui.runWithPrompt();
         }
     }
 }

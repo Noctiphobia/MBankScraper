@@ -1,54 +1,68 @@
 package com.mbankscraper.mbank;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebResponse;
 import com.gargoylesoftware.htmlunit.html.HtmlMeta;
 import com.mbankscraper.BankAccount;
 import com.mbankscraper.BankPage;
-import com.mbankscraper.utils.RegexUtils;
+import com.mbankscraper.BankRequest;
 
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Currency;
 import java.util.List;
-import java.util.stream.IntStream;
-
-import static java.util.stream.Collectors.toList;
 
 public class MBankMainPage extends BankPage {
     public final static String MAIN_PAGE_URL = "https://online.mbank.pl/pl";
 
-    private final static String NAME_REGEX = "\"ProductName\":\"(.*?)\""; //product from "ProductName":"product"
-    private final static String NUMBER_REGEX = "\"AccountNumber\":\"(.*?)\""; //number from "AccountNumber":"number"
-    private final static String BALANCE_REGEX = "\"Balance\":\"(.*?)\""; //balance from "Balance":"balance";
-    private final static String CURRENCY_REGEX = "\"Currency\":\"(.*?)\""; //currency from "Currency":"currency"
-
     private String tabId;
 
-    public MBankMainPage(WebClient webClient, String tabId)
-    {
+    public MBankMainPage(WebClient webClient, String tabId) {
         super(webClient);
         setPage(MAIN_PAGE_URL);
         this.tabId = tabId;
     }
 
-    public List<BankAccount> getAccounts(){
-        WebResponse response = sendRequest(new MBankAccountsRequest(getVerificationToken(), tabId));
+    public List<BankAccount> getAccounts() {
+        BankRequest request = MBankRequestFactory.accountsRequest(getVerificationToken(), tabId);
+        WebResponse response = sendRequest(request.toWebRequest());
         String responseContent = response.getContentAsString();
 
-        List<String> names = RegexUtils.getAllMatches(NAME_REGEX, responseContent);
-        List<String> numbers = RegexUtils.getAllMatches(NUMBER_REGEX, responseContent);
-        List<String> balances = RegexUtils.getAllMatches(BALANCE_REGEX, responseContent);
-        List<String> currencies = RegexUtils.getAllMatches(CURRENCY_REGEX, responseContent);
-
-        List<BankAccount> accounts = IntStream.range(0, names.size()).mapToObj(i -> new BankAccount(names.get(i),
-                numbers.get(i), new BigDecimal(balances.get(i).replace(',', '.')),
-                Currency.getInstance(currencies.get(i)))).collect(toList());
+        List<BankAccount> accounts = parseAccountsResponse(responseContent);
         return accounts;
     }
 
-    private String getVerificationToken(){
+    private String getVerificationToken() {
         HtmlMeta tokenElement = (HtmlMeta) page.getByXPath("//meta[@name=\"__AjaxRequestVerificationToken\"]").get(0);
         return tokenElement.getContentAttribute();
     }
 
+    private List<BankAccount> parseAccountsResponse(String responseContent) {
+        try {
+            List<BankAccount> accounts = new ArrayList<>();
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode rootNode = mapper.readValue(responseContent, JsonNode.class);
+            ArrayNode accountsNode = (ArrayNode) rootNode.get("accountDetailsList");
+            for (JsonNode accountNode : accountsNode) {
+                accounts.add(jsonNodeToBankAccount(accountNode));
+            }
+
+            return accounts;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private BankAccount jsonNodeToBankAccount(JsonNode node) {
+        BankAccount bankAccount = new BankAccount();
+        bankAccount.name = node.get("ProductName").asText();
+        bankAccount.number = node.get("AccountNumber").asText();
+        bankAccount.balance = new BigDecimal(node.get("Balance").asText().replace(',', '.'));
+        bankAccount.currency = Currency.getInstance(node.get("Currency").asText());
+        return bankAccount;
+    }
 }

@@ -11,11 +11,11 @@ public class BankPage {
     protected WebClient webClient;
     protected HtmlPage page;
 
-    public BankPage(WebClient webClient){
+    public BankPage(WebClient webClient) {
         this.webClient = webClient;
     }
 
-    protected void setPage(String url){
+    protected void setPage(String url) {
         try {
             page = webClient.getPage(url);
         } catch (IOException e) {
@@ -23,11 +23,10 @@ public class BankPage {
         }
     }
 
-    protected WebResponse sendRequest(WebRequest request){
+    protected WebResponse sendRequest(WebRequest request) {
         try {
             return webClient.getPage(request).getWebResponse();
-        }
-        catch (IOException e){
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }

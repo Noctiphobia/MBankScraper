@@ -24,6 +24,11 @@ sourceSets {
             srcDir 'src'
         }
     }
+    test {
+        java {
+            srcDirs = ['test']
+        }
+    }
 }
 
 repositories {
@@ -32,4 +37,8 @@ repositories {
 
 dependencies {
     compile 'net.sourceforge.htmlunit:htmlunit:2.27'
+    compile 'com.fasterxml.jackson.core:jackson-core:2.8.9'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.9'
+    compile 'com.fasterxml.jackson.core:jackson-annotations:2.8.9'
+    testCompile 'junit:junit:4.12'
 }

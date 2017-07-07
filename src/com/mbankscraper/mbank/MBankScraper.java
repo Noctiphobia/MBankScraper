@@ -5,7 +5,7 @@ import com.gargoylesoftware.htmlunit.ProxyConfig;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.mbankscraper.BankAccount;
 import com.mbankscraper.BankScraper;
-import com.mbankscraper.LoginDetails;
+import com.mbankscraper.LoginCredentials;
 
 import java.util.List;
 
@@ -15,10 +15,10 @@ public class MBankScraper implements BankScraper {
 
     private final boolean debug = false;
 
-    public MBankScraper(){
+    public MBankScraper() {
         webClient = new WebClient(BrowserVersion.CHROME);
         webClient.getOptions().setJavaScriptEnabled(false);
-        if (debug){
+        if (debug) {
             webClient.getOptions().setUseInsecureSSL(true);
             ProxyConfig proxyConfig = new ProxyConfig("127.0.0.1", 8080);
             webClient.getOptions().setProxyConfig(proxyConfig);
@@ -27,9 +27,9 @@ public class MBankScraper implements BankScraper {
 
 
     @Override
-    public List<BankAccount> getBankAccounts(LoginDetails loginDetails){
+    public List<BankAccount> getBankAccounts(LoginCredentials loginCredentials) {
         MBankLoginPage loginPage = new MBankLoginPage(webClient);
-        String tabId = loginPage.login(loginDetails);
+        String tabId = loginPage.login(loginCredentials);
         MBankMainPage mainPage = new MBankMainPage(webClient, tabId);
         return mainPage.getAccounts();
     }

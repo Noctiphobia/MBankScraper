@@ -1,36 +1,54 @@
 package com.mbankscraper.mbank;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebResponse;
 import com.mbankscraper.BankPage;
-import com.mbankscraper.LoginDetails;
+import com.mbankscraper.BankRequest;
+import com.mbankscraper.LoginCredentials;
 import com.mbankscraper.utils.RegexUtils;
+
+import java.io.IOException;
 
 public class MBankLoginPage extends BankPage {
     public final static String LOGIN_PAGE_URL = "https://online.mbank.pl/pl/Login";
 
     private final static String SEED_REGEX = "app\\.initialize\\('(.*?)'"; //seed from app.initialize('seed'
-    private final static String SUCCESS_REGEX = "\"successful\":(true|false)"; //value from "successful":value
-    private final static String ERROR_MESSAGE_REGEX = "\"errorMessageTitle\":\"(.*?)\""; //message from "errorMessageTitle":"message"
-    private final static String TAB_ID_REGEX = "\"tabId\":\"(.*?)\""; //id from "tabId":"id"
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class LoginResponse {
+        public boolean successful;
+        public String tabId;
+        public String errorMessageTitle;
+    }
 
     public MBankLoginPage(WebClient webClient) {
         super(webClient);
         setPage(LOGIN_PAGE_URL);
     }
 
-    public String login(LoginDetails loginDetails) {
+    public String login(LoginCredentials loginCredentials) {
         String seed = RegexUtils.getFirstMatchOrCrash(SEED_REGEX, page.asXml());
-        WebResponse response = sendRequest(new MBankLoginRequest(loginDetails, seed));
-        String responseContent = response.getContentAsString();
 
-        boolean success = Boolean.parseBoolean(RegexUtils.getFirstMatchOrCrash(SUCCESS_REGEX, responseContent));
-        if (!success) {
-            String errorMessage = RegexUtils.getFirstMatchOrCrash(ERROR_MESSAGE_REGEX, responseContent);
-            throw new RuntimeException(errorMessage);
+        BankRequest request = MBankRequestFactory.loginRequest(loginCredentials, seed);
+        WebResponse response = sendRequest(request.toWebRequest());
+        LoginResponse parsedResponse = parseResponse(response.getContentAsString());
+
+        if (!parsedResponse.successful) {
+            throw new RuntimeException(parsedResponse.errorMessageTitle);
         }
 
-        String tabId = RegexUtils.getFirstMatchOrCrash(TAB_ID_REGEX, responseContent);
-        return tabId;
+        return parsedResponse.tabId;
+    }
+
+    private LoginResponse parseResponse(String responseContent) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            LoginResponse response = mapper.readValue(responseContent, LoginResponse.class);
+            return response;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
